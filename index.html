@@ -71,10 +71,19 @@
             text-align: right; 
             padding: 16px;
             box-shadow: none;
+            cursor: pointer; /* ודא שהוא אינטראקטיבי */
         }
         .btn-option:hover {
             background-color: #4B5563;
         }
+        /* סגנון הדגשת תשובה שנבחרה */
+        .btn-selected {
+            border: 4px solid var(--primary-color); /* מסגרת כחולה להדגשה */
+            background-color: #1F2937 !important; /* מעט כהה יותר כדי להדגיש את המסגרת */
+            transform: scale(1.03); /* קצת הגדלה */
+            pointer-events: none; /* מונע לחיצות נוספות בזמן ההשהיה */
+        }
+
         /* טיימר - פס התקדמות */
         .timer-bar {
             height: 8px;
@@ -335,7 +344,7 @@
         }
 
         // --- לוגיקת המשחק ---
-
+        
         // פונקציה לחישוב הקוד הסופי
         function getAccessCode(score) {
             // ציון מ 90 עד 100
@@ -365,7 +374,7 @@
                     accessCode: accessCode,
                     answers: userAnswers,
                     timestamp: serverTimestamp(),
-                    quizVersion: "Part1_and_Part2_V4" // עדכון גרסה
+                    quizVersion: "Part1_and_Part2_V5_Instant" // עדכון גרסה
                 });
                 console.log("Quiz results saved successfully.");
             } catch (e) {
@@ -393,7 +402,8 @@
 
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    // אם לא ענה - נרשם כלא נכון
+                    
+                    // כאשר נגמר הזמן, התשובה נרשמת כלא נכונה
                     recordAnswer(false); 
                     loadNextQuestion();
                 }
@@ -406,7 +416,7 @@
                 endQuiz();
                 return;
             }
-
+            
             const q = questions[currentQuestionIndex];
             
             // הגדרת כותרת החלק
@@ -440,8 +450,12 @@
                 const optionsHtml = shuffledOptions.map((opt, index) => {
                     // מוצאים את האינדקס המקורי של התשובה כדי לבדוק נכונות
                     const originalIndex = q.options.findIndex(original => original.text === opt.text);
+                    // שימו לב: לחיצה שולחת ומדגישה
                     return `
-                        <button onclick="handleScenarioAnswer(${originalIndex})" class="btn-answer btn-option bg-gray-600 hover:bg-gray-500 text-white text-right p-4">
+                        <button 
+                            data-original-index="${originalIndex}" 
+                            onclick="handleScenarioAnswer(this, ${originalIndex})" 
+                            class="btn-answer btn-option bg-gray-600 hover:bg-gray-500 text-white text-right p-4">
                             <span class="block text-sm font-normal opacity-70 mb-1">הנחיה לבחירה ${index + 1}</span>
                             <p class="text-lg font-medium">${opt.text}</p>
                         </button>
@@ -454,7 +468,7 @@
                         <p class="text-xl font-light text-white leading-snug">"${q.patientQuestion}"</p>
                     </div>
                     <p class="text-lg font-medium text-gray-300 mb-4">בחר את ההנחיה הקלינית הנכונה:</p>
-                    <div class="flex flex-col w-full space-y-4">
+                    <div id="scenario-options-container" class="flex flex-col w-full space-y-4">
                         ${optionsHtml}
                     </div>
                 `;
@@ -463,6 +477,25 @@
             clearInterval(timerInterval);
             startTimer();
             showScreen('quiz');
+        }
+
+        // פונקציה להדגשת הבחירה ושליחת התשובה
+        function highlightAndSubmitScenario(element, isCorrect) {
+            clearInterval(timerInterval);
+            
+            // הדגש את הכפתור שנלחץ
+            element.classList.add('btn-selected');
+            
+            // השבת את כל כפתורי התרחיש כדי למנוע לחיצות נוספות
+            document.querySelectorAll('#scenario-options-container .btn-option').forEach(btn => {
+                btn.style.pointerEvents = 'none';
+            });
+            
+            // שמור את התשובה והעבר לשאלה הבאה לאחר השהיה קצרה להצגת ההדגשה
+            setTimeout(() => {
+                recordAnswer(isCorrect);
+                loadNextQuestion();
+            }, 500); // 500ms השהיה ויזואלית
         }
 
         // שמירת תשובה ושמירתה במערך
@@ -491,14 +524,12 @@
             loadNextQuestion();
         }
 
-        // טיפול בלחיצה על תשובה (חלק 2: תרחיש קליני)
-        window.handleScenarioAnswer = function(originalOptionIndex) {
-            clearInterval(timerInterval);
+        // טיפול בלחיצה על תשובה (חלק 2: תרחיש קליני) - עכשיו מעביר ישר להדגשה ושליחה
+        window.handleScenarioAnswer = function(element, originalOptionIndex) {
             const q = questions[currentQuestionIndex];
-            // בדיקה האם האופציה שנבחרה היא הנכונה
             const isCorrect = q.options[originalOptionIndex].isCorrect; 
-            recordAnswer(isCorrect); 
-            loadNextQuestion();
+            
+            highlightAndSubmitScenario(element, isCorrect);
         }
         
         // סיום האתגר
