@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אתגר GLP-1</title>
+    <!-- טעינת Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- טעינת Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #00A9FF; /* כחול בהיר - חדשנות */
+            --secondary-color: #FF5733; /* כתום - אנרגיה */
+            --background-color: #111827; /* כהה מאוד - מודרני */
+            --text-color: #F9FAFB;
+        }
+        body {
+            font-family: 'Heebo', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        /* סגנון כפתורים מודרני */
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--background-color);
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 169, 255, 0.4);
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+            box-shadow: 6px 20px rgba(0, 169, 255, 0.6);
+            transform: translateY(-2px);
+        }
+        /* סגנון כפתורי תשובה (צבעים ניטרליים לבקשת המשתמש) */
+        .btn-answer {
+            padding: 20px 0;
+            border-radius: 16px;
+            font-size: 1.25rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            border: 2px solid transparent;
+            text-align: center; /* ודא יישור מרכזי כברירת מחדל */
+        }
+        .btn-answer:hover {
+            transform: scale(1.03);
+        }
+        /* צבע חדש לכפתור 'נכון' - טורקיז */
+        .btn-true {
+            background-color: #06B6D4; 
+            color: var(--background-color);
+        }
+        /* צבע חדש לכפתור 'לא נכון' - סגול */
+        .btn-false {
+            background-color: #A855F7; 
+            color: var(--background-color);
+        }
+        /* סגנון כפתורי הנחיה (חלק ב') */
+        .btn-option {
+            background-color: #374151; /* אפור כהה */
+            color: var(--text-color);
+            text-align: right; 
+            padding: 16px;
+            box-shadow: none;
+        }
+        .btn-option:hover {
+            background-color: #4B5563;
+        }
+        /* טיימר - פס התקדמות */
+        .timer-bar {
+            height: 8px;
+            background-color: #E5E7EB;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .timer-progress {
+            height: 100%;
+            background-color: var(--secondary-color);
+            transition: width 1s linear;
+        }
+    </style>
+</head>
+<body class="p-4">
+
+    <!-- מיכל ראשי -->
+    <div id="app-container" class="w-full max-w-md bg-gray-800 p-6 rounded-3xl shadow-2xl">
+        
+        <!-- מסך טעינה -->
+        <div id="loading-screen" class="screen flex flex-col items-center justify-center text-center p-8 h-80">
+            <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-4 text-lg">טוען את האתגר...</p>
+        </div>
+
+        <!-- מסך פתיחה -->
+        <div id="start-screen" class="screen hidden text-center p-4">
+            <h1 class="text-4xl font-extrabold text-white mb-4">אתגר GLP-1</h1>
+            <p class="text-xl font-light text-gray-300 mb-8">כנס חדשנות בסוכרת</p>
+            <div class="bg-gray-700 p-5 rounded-xl text-right mb-6 shadow-inner">
+                <p class="text-gray-300 font-medium text-sm mb-3">כללים:</p>
+                <ul class="list-disc pr-5 space-y-2 text-sm text-gray-400">
+                    <li>האתגר מחולק ל-2 חלקים: נכון/לא נכון ותרחיש קליני.</li>
+                    <li>זמן קצוב: 15 שניות לשאלה בחלק א', ו-90 שניות בחלק ב'.</li>
+                    <li>אין משוב מיידי על תשובות.</li>
+                    <li>בסיום, תקבל קוד ייחודי על סמך הציון שלך.</li>
+                </ul>
+            </div>
+            <button id="start-quiz-btn" class="btn-primary w-full text-lg">התחל את האתגר</button>
+            <!-- עדכון כיתוב במקום מזהה משתמש -->
+            <p id="user-id-display" class="text-sm font-medium text-gray-400 mt-6 break-words">פותח במיוחד עבור כנס סוכרת 10.11.25</p>
+        </div>
+
+        <!-- מסך שאלות - הפך למסך דינמי -->
+        <div id="quiz-screen" class="screen hidden text-center">
+            <p id="part-title" class="text-xl font-medium text-blue-400 mb-4"></p>
+            <p id="question-counter" class="text-lg font-medium text-gray-400 mb-2">שאלה X מתוך Y</p>
+            <div class="timer-bar mb-6">
+                <div id="timer-progress" class="timer-progress" style="width: 100%;"></div>
+            </div>
+            
+            <!-- אזור תוכן דינמי (T/F או תרחיש) -->
+            <div id="question-content-area" class="min-h-40 flex flex-col justify-center items-center w-full">
+                <!-- Content injected here (T/F Q + Buttons OR Scenario Q + Options) -->
+            </div>
+            
+        </div>
+
+        <!-- מסך תוצאות -->
+        <div id="results-screen" class="screen hidden text-center p-4">
+            <h2 class="text-3xl font-extrabold text-white mb-6">סיום האתגר!</h2>
+            
+            <!-- הציון הוסר והוחלף בהודעה כללית -->
+            <h2 class="text-lg font-medium text-gray-300 mb-8">ציון האתגר נרשם והוגדר קוד גישה.</h2>
+            
+            <h3 class="text-2xl font-semibold text-white mb-3">קוד הגישה שלך:</h3>
+            <div class="bg-gray-900 p-4 rounded-xl border-2 border-dashed border-gray-600 mb-6">
+                <p id="access-code" class="text-4xl font-mono tracking-wider text-yellow-400"></p>
+            </div>
+            
+            <p class="text-sm text-gray-400">יש להזין קוד זה בטופס הרישום הייעודי להשלמת האתגר.</p>
+
+            <!-- כפתור לשחק שוב -->
+            <button id="restart-quiz-btn" class="btn-primary w-full text-lg mt-8">שחק שוב מהתחלה</button>
+        </div>
+        
+    </div>
+
+    <!-- סקריפטים של Firebase ושל המשחק -->
+    <script type="module">
+        // ייבוא מודולים של Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, orderBy, limit, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // הגדרות גלובליות
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-glp1-quiz';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // אתחול Firebase
+        let app;
+        let db;
+        let auth;
+        let userId = null;
+        let isAuthReady = false;
+
+        if (Object.keys(firebaseConfig).length > 0) {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            setLogLevel('debug'); // הגדרת רמת לוגים לצורך דיבוג
+        } else {
+            console.error("Firebase config is missing. Data storage will not work.");
+        }
+
+        // פונקציית ערבוב מערך (לשאלות תרחיש)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // מערך השאלות המאוחד (חלק א' 15 נק' * 6 = 90; חלק ב' 2 נק' * 5 = 10. סה"כ 100)
+        const questions = [
+            // --- חלק 1: נכון או לא נכון (15 נקודות כל אחת) ---
+            { part: 1, type: 'true_false', text: "GLP1 זה סוג של אינסולין.", correct: false, points: 15 }, 
+            { part: 1, type: 'true_false', text: "אוזמפיק ניתן פעם בשבוע בלבד.", correct: true, points: 15 }, 
+            { part: 1, type: 'true_false', text: "יש להפסיק כמעט תמיד זריקות של GLP1 בזמן האשפוז.", correct: false, points: 15 }, 
+            { part: 1, type: 'true_false', text: "GLP1 עלול להגביר סיכון לסרטן בלוטת תריס בבני אדם מכל סוג שהוא", correct: false, points: 15 }, 
+            { part: 1, type: 'true_false', text: "GLP1 עלול להחמיר רטינופתיה קיימת כאשר הסוכר מתאזן במהירות.", correct: true, points: 15 }, 
+            { part: 1, type: 'true_false', text: "במידה והמטופל סובל מבחילה או עצירות לאחר טיפול ב GLP1 יש להפסיק את הטיפול באופן מיידי.", correct: false, points: 15 }, 
+
+            // --- חלק 2: תרחיש קליני (2 נקודות כל אחת) ---
+            { 
+                part: 2, 
+                type: 'scenario', 
+                patientQuestion: "שמעתי שאוזמפיק עושה עיוורון, זה נכון?!", 
+                options: [
+                    { text: "לא, אוזמפיק אינו גורם לעיוורון להפך הוא משפר את הראייה ומפחית את הסיכון להיפרדות רשתית", isCorrect: false },
+                    { text: "במטופלים עם רטינופתיה קיימת, ייתכן סיכון להחמרה זמנית עם שיפור מהיר של הסוכר. לכן נדרש מעקב עיניים.", isCorrect: true }
+                ],
+                points: 2
+            },
+            { 
+                part: 2, 
+                type: 'scenario', 
+                patientQuestion: "אמרו לי שGLP1 גורם לסרטן בבלוטת התריס…", 
+                options: [
+                    { text: "אין עדות לסיכון בבני אדם. רק אם יש סיפור אישי/משפחתי של קרצינומה מדולרית או MEN2, אז התרופה אסורה.", isCorrect: true },
+                    { text: "GLP1 עלול לגרום לסרטן בבלוטת התריס מכל סוג שהוא לכן חל איסור על מתן GLP1 למטופלים עם הפרעה בבלוטת התריס", isCorrect: false }
+                ],
+                points: 2
+            },
+            { 
+                part: 2, 
+                type: 'scenario', 
+                patientQuestion: "מאז שהתחלתי יש לי עצירות – זה נורמלי?", 
+                options: [
+                    { text: "לא אוזמפיק יכול לעשות רק שלשולים ולכן אין קשר לתרופה ויש צורך בבירור נוסף", isCorrect: false },
+                    { text: "כן, זה שכיח בתחילת טיפול ובזמן העלאת מינון. טיטרציה הדרגתית תפחית את תופעות הלוואי, וברגע שהגוף יתרגל תופעות הלוואי לרוב חולפות.", isCorrect: true }
+                ],
+                points: 2
+            },
+            // תרחיש חדש: מסת שריר
+             { 
+                part: 2, 
+                type: 'scenario', 
+                patientQuestion: "ירדתי במשקל, אבל גם מרגיש חלש. יכול להיות שאיבדתי מסת שריר?", 
+                options: [
+                    { text: "לא, GLP1 מוריד רק מסת שומן ולא מפחית בכלל מסת שריר", isCorrect: false },
+                    { text: "כן, חלק מהירידה במשקל כוללת גם ירידה מועטה במסת שריר. חשוב לשלב פעילות גופנית, בעיקר אימוני התנגדות, ותזונה מספקת בחלבון.", isCorrect: true }
+                ],
+                points: 2
+            },
+            // תרחיש חדש: דיכאון
+            { 
+                part: 2, 
+                type: 'scenario', 
+                patientQuestion: "מאז שהתחלתי את הזריקה השבועית אני מדוכא, זה מהתרופה?", 
+                options: [
+                    { text: "יש להפסיק באופן מידיי את התרופה, זה לחלוטין כתוצאה מהתרופה", isCorrect: false },
+                    { text: "אין עדות לקשר ישיר, אבל חשוב לעקוב אחרי מצב רוח ולשתף את הצוות המטפל.", isCorrect: true }
+                ],
+                points: 2
+            },
+        ];
+        
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        let timerInterval;
+        let timeLeft;
+        
+        // הגדרת מגבלות זמן לפי חלק
+        const TIME_LIMIT_TF = 15;
+        const TIME_LIMIT_SCENARIO = 90;
+        
+        // פונקציה לקבלת מגבלת הזמן
+        function getCurrentTimeLimit() {
+            if (currentQuestionIndex < questions.length) {
+                const qType = questions[currentQuestionIndex].type;
+                return qType === 'true_false' ? TIME_LIMIT_TF : TIME_LIMIT_SCENARIO;
+            }
+            return TIME_LIMIT_TF; // ברירת מחדל
+        }
+
+        // רכיבי DOM
+        const screens = {
+            loading: document.getElementById('loading-screen'),
+            start: document.getElementById('start-screen'),
+            quiz: document.getElementById('quiz-screen'),
+            results: document.getElementById('results-screen')
+        };
+        const startButton = document.getElementById('start-quiz-btn');
+        const restartButton = document.getElementById('restart-quiz-btn'); 
+        const questionCounter = document.getElementById('question-counter');
+        const timerProgress = document.getElementById('timer-progress');
+        const accessCodeDisplay = document.getElementById('access-code');
+        const userIdDisplay = document.getElementById('user-id-display');
+        const questionContentArea = document.getElementById('question-content-area');
+        const partTitle = document.getElementById('part-title');
+        
+        // פונקציה להצגת מסך
+        function showScreen(screenName) {
+            Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+            screens[screenName].classList.remove('hidden');
+        }
+
+        // --- לוגיקת Firebase ואותנטיקציה ---
+        async function authenticate() {
+            try {
+                if (initialAuthToken && auth) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else if (auth) {
+                    // כניסה אנונימית אם אין טוקן התחלתי
+                    await signInAnonymously(auth);
+                } else {
+                    userId = `offline-${crypto.randomUUID()}`;
+                    isAuthReady = true;
+                }
+            } catch (error) {
+                console.error("Firebase Auth Error:", error);
+                userId = `error-${crypto.randomUUID()}`;
+            }
+        }
+
+        if (auth) {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    userId = user.uid;
+                } else {
+                    userId = `anon-${crypto.randomUUID()}`;
+                }
+                isAuthReady = true;
+                showScreen('start');
+            });
+            authenticate();
+        } else {
+            userId = `offline-${crypto.randomUUID()}`;
+            isAuthReady = true;
+            showScreen('start');
+        }
+
+        // --- לוגיקת המשחק ---
+
+        // פונקציה לחישוב הקוד הסופי
+        function getAccessCode(score) {
+            // ציון מ 90 עד 100
+            if (score >= 90) return 'GLP00100'; 
+            // ציון עד 90 (כלומר 80-89)
+            if (score >= 80) return 'GLP10100'; 
+            // ציון עד 80 (כלומר 40-79)
+            if (score >= 40) return 'GLP20100'; 
+            // ציון עד 40 (כלומר 0-39)
+            return 'GLP60100';
+        }
+
+        // פונקציה לשמירת התוצאות ב-Firestore
+        async function saveResults(finalScore, accessCode) {
+            if (!db || !userId) {
+                console.error("Firestore or User ID is not available. Skipping save.");
+                return;
+            }
+
+            // שמירה בנתיב פרטי למשתמש
+            const quizRef = doc(db, `artifacts/${appId}/users/${userId}/glp1_quiz_results/current_quiz`);
+            
+            try {
+                await setDoc(quizRef, {
+                    userId: userId,
+                    score: finalScore,
+                    accessCode: accessCode,
+                    answers: userAnswers,
+                    timestamp: serverTimestamp(),
+                    quizVersion: "Part1_and_Part2_V4" // עדכון גרסה
+                });
+                console.log("Quiz results saved successfully.");
+            } catch (e) {
+                console.error("Error saving document: ", e);
+            }
+        }
+
+        // התחלת הטיימר
+        function startTimer() {
+            const currentLimit = getCurrentTimeLimit(); // קבלת המגבלה הדינמית
+            timeLeft = currentLimit;
+            timerProgress.style.width = '100%';
+            timerProgress.style.backgroundColor = 'var(--secondary-color)';
+            
+            clearInterval(timerInterval); // ודא עצירת טיימר קודם
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const progress = (timeLeft / currentLimit) * 100; // השתמש במגבלה הנכונה לחישוב הפרוגרס
+                timerProgress.style.width = `${progress}%`;
+                
+                if (timeLeft <= 5) {
+                    timerProgress.style.backgroundColor = '#EF4444'; // אדום
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    // אם לא ענה - נרשם כלא נכון
+                    recordAnswer(false); 
+                    loadNextQuestion();
+                }
+            }, 1000);
+        }
+
+        // טעינת שאלה נוכחית והתאמת הממשק
+        function loadQuestion() {
+            if (currentQuestionIndex >= questions.length) {
+                endQuiz();
+                return;
+            }
+
+            const q = questions[currentQuestionIndex];
+            
+            // הגדרת כותרת החלק
+            partTitle.textContent = `חלק ${q.part}: ${q.part === 1 ? 'נכון או לא נכון' : 'תרחיש קליני'}`;
+
+            questionCounter.textContent = `שאלה ${currentQuestionIndex + 1} מתוך ${questions.length}`;
+
+            // ניקוי תוכן קודם
+            questionContentArea.innerHTML = '';
+            
+            // --- עיבוד תוכן לפי סוג השאלה ---
+            if (q.type === 'true_false') {
+                // הצגת שאלות נכון/לא נכון
+                questionContentArea.innerHTML = `
+                    <p id="question-text" class="text-2xl font-bold text-white leading-relaxed mb-8">${q.text}</p>
+                    <div class="flex flex-col w-full space-y-4">
+                        <button onclick="handleTrueFalseAnswer(true)" class="btn-answer btn-true">
+                            נכון
+                            <span class="block text-sm font-normal opacity-70">(True)</span>
+                        </button>
+                        <button onclick="handleTrueFalseAnswer(false)" class="btn-answer btn-false">
+                            לא נכון
+                            <span class="block text-sm font-normal opacity-70">(False)</span>
+                        </button>
+                    </div>
+                `;
+            } else if (q.type === 'scenario') {
+                // הצגת שאלות תרחיש קליני
+                const shuffledOptions = shuffleArray([...q.options]);
+                
+                const optionsHtml = shuffledOptions.map((opt, index) => {
+                    // מוצאים את האינדקס המקורי של התשובה כדי לבדוק נכונות
+                    const originalIndex = q.options.findIndex(original => original.text === opt.text);
+                    return `
+                        <button onclick="handleScenarioAnswer(${originalIndex})" class="btn-answer btn-option bg-gray-600 hover:bg-gray-500 text-white text-right p-4">
+                            <span class="block text-sm font-normal opacity-70 mb-1">הנחיה לבחירה ${index + 1}</span>
+                            <p class="text-lg font-medium">${opt.text}</p>
+                        </button>
+                    `;
+                }).join('');
+
+                questionContentArea.innerHTML = `
+                    <div class="text-right w-full mb-6 p-4 bg-gray-700 rounded-xl shadow-lg border-l-4 border-yellow-400">
+                        <p class="text-xl font-semibold text-yellow-300 mb-2">שאלת המטופל:</p>
+                        <p class="text-xl font-light text-white leading-snug">"${q.patientQuestion}"</p>
+                    </div>
+                    <p class="text-lg font-medium text-gray-300 mb-4">בחר את ההנחיה הקלינית הנכונה:</p>
+                    <div class="flex flex-col w-full space-y-4">
+                        ${optionsHtml}
+                    </div>
+                `;
+            }
+            
+            clearInterval(timerInterval);
+            startTimer();
+            showScreen('quiz');
+        }
+
+        // שמירת תשובה ושמירתה במערך
+        // answerResult הוא בוליאני (true אם ענה נכון, false אם ענה לא נכון או נגמר הזמן)
+        function recordAnswer(answerResult) {
+            const currentLimit = getCurrentTimeLimit();
+            userAnswers.push({
+                questionIndex: currentQuestionIndex,
+                isCorrect: answerResult,
+                timeSpent: currentLimit - timeLeft, // זמן שלקח לענות
+            });
+        }
+
+        // מעבר לשאלה הבאה
+        function loadNextQuestion() {
+            currentQuestionIndex++;
+            loadQuestion();
+        }
+
+        // טיפול בלחיצה על תשובה (חלק 1: נכון/לא נכון)
+        window.handleTrueFalseAnswer = function(answer) {
+            clearInterval(timerInterval);
+            const q = questions[currentQuestionIndex];
+            const isCorrect = answer === q.correct;
+            recordAnswer(isCorrect);
+            loadNextQuestion();
+        }
+
+        // טיפול בלחיצה על תשובה (חלק 2: תרחיש קליני)
+        window.handleScenarioAnswer = function(originalOptionIndex) {
+            clearInterval(timerInterval);
+            const q = questions[currentQuestionIndex];
+            // בדיקה האם האופציה שנבחרה היא הנכונה
+            const isCorrect = q.options[originalOptionIndex].isCorrect; 
+            recordAnswer(isCorrect); 
+            loadNextQuestion();
+        }
+        
+        // סיום האתגר
+        function endQuiz() {
+            // חישוב ציון סופי
+            let finalScore = 0;
+            userAnswers.forEach((answerData, index) => {
+                const question = questions[index];
+                // אם התשובה היא נכונה (true), מוסיפים את הנקודות
+                if (answerData.isCorrect) {
+                    finalScore += question.points;
+                }
+            });
+
+            // יצירת קוד גישה
+            const accessCode = getAccessCode(finalScore);
+
+            // הצגת הקוד הסופי
+            accessCodeDisplay.textContent = accessCode;
+
+            // שמירת נתונים
+            saveResults(finalScore, accessCode);
+            
+            showScreen('results');
+        }
+
+        // --- אתחול והפעלת המשחק ---
+        startButton.addEventListener('click', () => {
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            loadQuestion();
+        });
+
+        // לוגיקה לכפתור 'שחק שוב'
+        restartButton.addEventListener('click', () => {
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            showScreen('start');
+        });
+
+        // הצג את מסך הטעינה עד לסיום האותנטיקציה
+        if (!isAuthReady) {
+            showScreen('loading');
+        } else {
+            showScreen('start');
+        }
+        
+    </script>
+</body>
+</html>
