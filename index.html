@@ -6,7 +6,7 @@
     <title>אתגר GLP-1</title>
     <!-- טעינת Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- טעינת Google Fonts - Inter -->
+    <!-- טעינת Google Fonts - Heebo -->
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@100..900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -39,6 +39,23 @@
             opacity: 0.9;
             box-shadow: 6px 20px rgba(0, 169, 255, 0.6);
             transform: translateY(-2px);
+        }
+        /* סגנון כפתור משני חדש */
+        .btn-secondary {
+            background-color: #374151; /* אפור כהה */
+            color: var(--text-color);
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            display: inline-block;
+            text-decoration: none;
+            border: 1px solid #4B5563;
+        }
+        .btn-secondary:hover {
+            background-color: #4B5563;
+            transform: translateY(-1px);
         }
         /* סגנון כפתורי תשובה (צבעים ניטרליים לבקשת המשתמש) */
         .btn-answer {
@@ -127,6 +144,12 @@
                 </ul>
             </div>
             <button id="start-quiz-btn" class="btn-primary w-full text-lg">התחל את האתגר</button>
+            
+            <!-- כפתור חדש לאתר החיצוני -->
+            <a href="https://diabetes-challenge.vercel.app" target="_blank" class="btn-secondary w-full text-lg mt-4 block text-center">
+                לאתר אתגר הסוכרת
+            </a>
+            
             <!-- עדכון כיתוב במקום מזהה משתמש -->
             <p id="user-id-display" class="text-sm font-medium text-gray-400 mt-6 break-words">פותח במיוחד עבור כנס סוכרת 10.11.25</p>
         </div>
